@@ -1,0 +1,28 @@
+# If the sql instance data is not present, install a new instance
+if (!(Test-Path {{pkg.svc_data_path}}/mssql14.{{pkg.name}})) {
+    setup.exe /configurationfile={{pkg.svc_config_path}}/config.ini /Q
+}
+
+# Configure the instance for the configured port
+Set-ItemProperty -Path  "HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\MSSQL14.{{pkg.name}}\MSSQLServer\SuperSocketNetLib\Tcp\IPAll" -Name TcpPort -Value {{cfg.port}}
+
+$ProgressPreference="SilentlyContinue"
+Write-Host "Ensuring xNetworking DSC resources are installed..."
+Install-Module xNetworking -Force | Out-Null
+
+Write-Host "Compiling DSC mof..."
+. (Join-Path {{pkg.svc_config_path}} firewall.ps1)
+$mof = NewFirewallRule -OutputPath "{{pkg.svc_data_path}}"
+
+# Need to move xNetworking because LCM is not honoring PS Core's PSModulePath
+$mod = (Get-Module xNetworking -ListAvailable).ModuleBase
+$machine_mod = "C:\Program Files\windowsPowerShell\Modules\xNetworking"
+if(Test-Path $machine_mod) { Remove-Item $machine_mod -Recurse -Force }
+Move-Item $mod $machine_mod -Force
+
+$configurationData = Get-Content $mof.FullName -Encoding Byte -ReadCount 0
+$totalSize = [System.BitConverter]::GetBytes($configurationData.Length + 4)
+$configurationData = $totalSize + $configurationData
+
+Write-Host "Applying DSC configuration..."
+Invoke-CimMethod -ComputerName localhost -Namespace "root/Microsoft/Windows/DesiredStateConfiguration" -ClassName "MSFT_DSCLocalConfigurationManager" -MethodName "SendConfigurationApply" -Arguments @{ConfigurationData = $configurationData; Force = $true}

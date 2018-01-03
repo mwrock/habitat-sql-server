@@ -1,0 +1,9 @@
+# Create application Users
+
+Write-Host "Starting application user setup..."
+
+."$env:ProgramFiles\Microsoft SQL Server\140\Tools\Binn\OSQL.EXE" -S localhost,{{cfg.port}} -U sa -P {{cfg.sa_password}} -Q "create login {{cfg.app_user}} with password = '{{cfg.app_password}}'"
+."$env:ProgramFiles\Microsoft SQL Server\140\Tools\Binn\OSQL.EXE" -S localhost,{{cfg.port}} -U sa -P {{cfg.sa_password}} -Q "create user {{cfg.app_user}} for login {{cfg.app_user}}"
+."$env:ProgramFiles\Microsoft SQL Server\140\Tools\Binn\OSQL.EXE" -S localhost,{{cfg.port}} -U sa -P {{cfg.sa_password}} -Q "grant CREATE DATABASE to {{cfg.app_user}}"
+
+Write-Host "Application user setup complete"
