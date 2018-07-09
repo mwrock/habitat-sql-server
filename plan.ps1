@@ -10,13 +10,9 @@ $pkg_exports = @{
 $pkg_description = "Microsoft SQL Server 2017"
 $pkg_upstream_url = "https://www.microsoft.com/en-us/sql-server/sql-server-2017"
 $pkg_bin_dirs = @("bin")
+$pkg_deps=@("core/dsc-core")
 
 $setupDir = "d:"
-
-function invoke-download { }
-function invoke-verify { }
-
-function Invoke-Build { }
 
 function Invoke-Install {
   Copy-Item "$setupDir/*" $pkg_prefix/bin -Recurse
